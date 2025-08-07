@@ -1,1 +1,1 @@
-README.md
+Execução de queries (relacionais e vetoriais)
