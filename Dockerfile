@@ -1,4 +1,4 @@
-FROM rust:1.75-alpine as builder
+FROM rust:1.74-alpine as builder
 
 # Install build dependencies
 RUN apk add --no-cache musl-dev
@@ -7,7 +7,7 @@ RUN apk add --no-cache musl-dev
 WORKDIR /app
 
 # Copy Cargo files
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml ./
 
 # Create a dummy main.rs to build dependencies
 RUN mkdir src && echo "fn main() {}" > src/main.rs
