@@ -1,16 +1,17 @@
-PY ?= python3
-PIP ?= pip3
+CARGO ?= cargo
 PORT ?= 8002
 
 install:
-	$(PIP) install --upgrade pip
-	$(PIP) install -r requirements.txt
+	$(CARGO) build
 
 run:
-	uvicorn app.main:app --reload --host 0.0.0.0 --port $(PORT)
+	$(CARGO) run
 
 test:
-	pytest -q
+	$(CARGO) test
+
+clean:
+	$(CARGO) clean
 
 docker-build:
 	docker build -t askadb/query-engine:local .

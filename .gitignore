@@ -1,52 +1,35 @@
-__pycache__/
-*.py[cod]
-*.egg-info/
-dist/
-build/
-.venv/
-venv/
-.env
-.env.*
-.pytest_cache/
-.mypy_cache/
-.coverage
-htmlcov/
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
-data/*.parquet
-data/*.csv
-# Byte-compiled / cache
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
+Thumbs.db
 
-# Virtual environments
-.venv/
-venv/
-ENV/
-
-# dotenv
+# Environment
 .env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # Logs
 *.log
 
-# OS files
-.DS_Store
-Thumbs.db
-
-# VSCode
-.vscode/
-!.vscode/settings.json
-!.vscode/launch.json
-
-# Jupyter
-.ipynb_checkpoints/
-
-# DuckDB files
-*.duckdb
-
-# Dados (opcional: manter somente mock)
+# Data
+data/*.db
+data/*.sqlite
 data/*.csv
 data/*.parquet
 !data/README.md
+
+# Build artifacts
+dist/
+build/
