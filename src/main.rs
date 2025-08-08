@@ -1,5 +1,5 @@
 use axum::{
-    extract::Json,
+    extract::{Json, State},
     http::StatusCode,
     response::Json as JsonResponse,
     routing::post,
@@ -9,12 +9,14 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tower_http::cors::CorsLayer;
 use tracing::{info, warn};
+use hyper::Server;
 
 mod storage;
-mod query;
 
-use storage::StorageEngine;
-use query::{QueryExecutor, QueryResult};
+#[derive(Clone)]
+struct AppState {
+    db_path: String,
+}
 
 #[derive(Debug, Deserialize)]
 struct QueryRequest {
@@ -38,60 +40,63 @@ struct QueryMetadata {
 
 #[tokio::main]
 async fn main() {
-    // Initialize logging
     tracing_subscriber::fmt::init();
     info!("Starting Askadb Query Engine...");
 
-    // Initialize storage engine
-    let storage = StorageEngine::new("data/askadb.db").await;
-    
-    // Initialize query executor
-    let query_executor = QueryExecutor::new(storage);
+    let db_path = "data/askadb.db".to_string();
 
-    // Create router
+    // Initialize DB (tables + sample data)
+    if let Err(e) = storage::init_db(&db_path) {
+        panic!("Failed to initialize database: {}", e);
+    }
+
+    let state = AppState { db_path };
+
     let app = Router::new()
         .route("/execute", post(execute_query))
         .route("/health", post(health_check))
         .layer(CorsLayer::permissive())
-        .with_state(query_executor);
+        .with_state(state);
 
-    // Start server
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8002").await.unwrap();
-    info!("Query Engine listening on http://0.0.0.0:8002");
-    
-    axum::serve(listener, app).await.unwrap();
+    let addr = "0.0.0.0:8002".parse().unwrap();
+    info!("Query Engine listening on http://{}", addr);
+
+    Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 }
 
 async fn execute_query(
+    State(state): State<AppState>,
     Json(payload): Json<QueryRequest>,
-    axum::extract::State(query_executor): axum::extract::State<QueryExecutor>,
 ) -> Result<JsonResponse<QueryResponse>, StatusCode> {
     let start_time = std::time::Instant::now();
-    
+
     info!("Executing query: {}", payload.query);
-    
-    match query_executor.execute(&payload.query).await {
-        Ok(result) => {
+
+    match storage::execute_query(&state.db_path, &payload.query) {
+        Ok((rows, columns)) => {
             let execution_time = start_time.elapsed().as_millis() as u64;
-            
+
             let metadata = QueryMetadata {
-                row_count: result.data.len(),
-                columns: result.columns,
+                row_count: rows.len(),
+                columns,
                 execution_time_ms: execution_time,
             };
-            
+
             let response = QueryResponse {
                 success: true,
-                data: Some(result.data),
+                data: Some(rows),
                 error: None,
                 metadata,
             };
-            
+
             Ok(JsonResponse(response))
         }
         Err(e) => {
             warn!("Query execution failed: {}", e);
-            
+
             let response = QueryResponse {
                 success: false,
                 data: None,
@@ -102,7 +107,7 @@ async fn execute_query(
                     execution_time_ms: 0,
                 },
             };
-            
+
             Ok(JsonResponse(response))
         }
     }

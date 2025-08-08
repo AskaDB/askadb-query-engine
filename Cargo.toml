@@ -9,6 +9,7 @@ axum = "0.6"
 tokio = { version = "1.0", features = ["full"] }
 tower = "0.4"
 tower-http = { version = "0.4", features = ["cors"] }
+hyper = { version = "0.14", features = ["full"] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
